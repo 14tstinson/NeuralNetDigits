@@ -50,7 +50,7 @@ class Network(object):
 
     def update_mini_batch(self, mini_batch, eta):
         #this function updates the weights and the biases by the ammount calculated using the 
-        #mini batch data
+        #mini batch data (This is the gradient descent)
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
@@ -63,6 +63,11 @@ class Network(object):
         self.biases = [b-(eta/len(mini_batch))*nb for b, nb in zip(self.biases, nabla_b)]
         
     def backprop(self, x, y):
+        """ backpropagation is the algorithm used to calculate the partial derivatives with respect to each weight and bias
+        in the network. Having these values lets us perform gradient descent in order to improve the network 'learn'.
+        Backpropagation is so good because it computes all of the partial derivatives needed with the processing equivalent
+        to going through the network once.
+        """
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         
@@ -75,6 +80,8 @@ class Network(object):
             zs.append(z)
             #this loop is putting the input through the whole network as we currently have it
             #saves results of all calculations in zs and all inputs in activations
+            #these intermediate results are used to calculate required derivatives
+            #This is great as dont need any more processing, just need to store intermediate results
             activation = self.sigmoid(z)
             activations.append(activation)
         
