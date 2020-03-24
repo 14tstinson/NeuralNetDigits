@@ -76,26 +76,37 @@ class Network(object):
         activations = [x]
         zs = []
         for b, w in zip(self.biases, self.weights):
+            
             z = np.dot(w, activation)+b
             zs.append(z)
-            #this loop is putting the input through the whole network as we currently have it
-            #saves results of all calculations in zs and all inputs in activations
+            #this loop is putting the input through the whole network as we currently have it (the feedforward)
+            #saves results of all calculations in zs and activation(input for next layer) which is just sigmoid of z
             #these intermediate results are used to calculate required derivatives
             #This is great as dont need any more processing, just need to store intermediate results
             activation = self.sigmoid(z)
             activations.append(activation)
         
-        #calculating the 
+        #calculating delta which is our error
+        #error in this sense is a list of partial derivatives of cost with respect to z of the l-th layer
         delta = self.cost_derivative(activations[-1], y) * self.sigmoid_prime(zs[-1])
+        #implementing backpropagation equation to calculate error 
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
 
         for l in range(2, self.num_layers):
+            #this is the backpropagation of the error
+            #go through the layers backwards to calculate partial derivatives of cost function with respect to each
+            #weight and bias and return these (nabla_b, nabla_w) to be used for gradient descent
             z = zs[-l]
             sp = self.sigmoid_prime(z)
+            #this is just one of the four backpropagation equation being implemented with np operations
+            #transpose just 'flips' the dimensions/axes of the array so the multiplication works (dot product)
             delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
+            #delta is array of errors for each neuron in last -l layer
             nabla_b[-l] = delta
+            #implementing backpropagation equation
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
+            #implementing last backpropagation quation
         return nabla_b, nabla_w
 
     def evaluate(self, test_data):
@@ -107,6 +118,8 @@ class Network(object):
         #this returns how many of the predictions are right
 
     def cost_derivative(self, output_activations, y):
+        #this calculation for the partial derivative of quadratic (MSE) cost function with respect to an activation
+        #This is so simple due to some chain rule terms cancelling
         return output_activations-y
 
     def sigmoid_prime(self, z):
