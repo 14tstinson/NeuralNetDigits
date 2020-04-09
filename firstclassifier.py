@@ -2,8 +2,9 @@ import numpy as np
 import random
 
 class Network(object):
-    def __init__(self, sizes):
+    def __init__(self, sizes, *cost_type):
         
+        self.cost_type = cost_type
         self.num_layers = len(sizes)
         self.sizes = sizes
         #sizes is number of neurons in each layer
@@ -57,17 +58,17 @@ class Network(object):
             #x is input data, y is correct answer
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             #currently these list loops are the same as setting nabla to delta nabla
-            nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, deta_nabla_b}]
+            nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
         self.weights = [w-(eta/len(mini_batch))*nw for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b-(eta/len(mini_batch))*nb for b, nb in zip(self.biases, nabla_b)]
         
     def backprop(self, x, y):
-        """ backpropagation is the algorithm used to calculate the partial derivatives with respect to each weight and bias
-        in the network. Having these values lets us perform gradient descent in order to improve the network 'learn'.
-        Backpropagation is so good because it computes all of the partial derivatives needed with the processing equivalent
-        to going through the network once.
-        """
+        #Backpropagation is the algorithm used to calculate the partial derivatives with respect to each weight and bias
+        #in the network. Having these values lets us perform gradient descent in order to improve the network 'learn'.
+        #Backpropagation is so good because it computes all of the partial derivatives needed with the processing equivalent
+        #to going through the network once.
+        
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         
@@ -88,7 +89,10 @@ class Network(object):
         
         #calculating delta which is our error
         #error in this sense is a list of partial derivatives of cost with respect to z of the l-th layer
-        delta = self.cost_derivative(activations[-1], y) * self.sigmoid_prime(zs[-1])
+        delta = self.quad_cost_derivative(activations[-1], y) 
+        if cost_type == "quadratic":
+            delta *= self.sigmoid_prime(zs[-1])
+            
         #implementing backpropagation equation to calculate error 
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
@@ -117,7 +121,9 @@ class Network(object):
         return sum(int(x==y) for x, y in test_results)#
         #this returns how many of the predictions are right
 
-    def cost_derivative(self, output_activations, y):
+    def cross_entropy_cost_deriviative(self, output_activations, y):
+        return
+    def quad_cost_derivative(self, output_activations, y):
         #this calculation for the partial derivative of quadratic (MSE) cost function with respect to an activation
         #This is so simple due to some chain rule terms cancelling
         return output_activations-y
