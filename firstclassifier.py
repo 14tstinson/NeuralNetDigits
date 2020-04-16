@@ -2,9 +2,11 @@ import numpy as np
 import random
 
 class Network(object):
-    def __init__(self, sizes, *cost_type):
-        
+    def __init__(self, sizes, lmda, cost_type=None, reg_type=None):
+
+        self.lmda = lmda
         self.cost_type = cost_type
+        self.reg_type = reg_type
         self.num_layers = len(sizes)
         self.sizes = sizes
         #sizes is number of neurons in each layer
@@ -42,14 +44,14 @@ class Network(object):
             mini_batches = [training_data[k:k+mini_batch_size] for k in range(0, n, mini_batch_size)]
             for mini_batch in mini_batches:
                 #update the weights and biases using back propogation
-                self.update_mini_batch(mini_batch, eta)
+                self.update_mini_batch(mini_batch, eta, len(training_data))
             if test_data:
                 #printing information on which epoch is finished and the sucess rate
                 print("Epoch {0}: {1} / {2}".format(j, self.evaluate(test_data), n_test))
             else:
                 print("Epoch %d complete", j)
 
-    def update_mini_batch(self, mini_batch, eta):
+    def update_mini_batch(self, mini_batch, eta, len_train):
         #this function updates the weights and the biases by the ammount calculated using the 
         #mini batch data (This is the gradient descent)
         nabla_b = [np.zeros(b.shape) for b in self.biases]
@@ -60,7 +62,16 @@ class Network(object):
             #currently these list loops are the same as setting nabla to delta nabla
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [w-(eta/len(mini_batch))*nw for w, nw in zip(self.weights, nabla_w)]
+        #adding regularization term to weights as it doesn't affect the update rule for the biases
+        #this form of regularization is called L2 regularization
+        #Regularization adds a term to the original cost function so that the cost function favours smaller weights
+        #Not really known why smaller weights are good but reduces over fitting as makes it easier to create bigger changes in the nets output by changing single weights
+        if self.reg_type == "L2":
+            self.weights = [((1-(eta*self.lmda)/len_train)*w)-(eta/len(mini_batch))*nw for w, nw in zip(self.weights, nabla_w)]
+        elif self.reg_type == "L1":
+            self.weights = [w-((eta*self.lmda)/len_train)*(w/abs(w))-(eta/len(mini_batch))*nw for w, nw in zip(self.weights, nabla_w)]
+        else:
+            self.weights = [w-(eta/len(mini_batch))*nw for w, nw in zip(self.weights, nabla_w)]
         self.biases = [b-(eta/len(mini_batch))*nb for b, nb in zip(self.biases, nabla_b)]
         
     def backprop(self, x, y):
@@ -89,8 +100,8 @@ class Network(object):
         
         #calculating delta which is our error
         #error in this sense is a list of partial derivatives of cost with respect to z of the l-th layer
-        delta = self.quad_cost_derivative(activations[-1], y) 
-        if cost_type == "quadratic":
+        delta = self.cost_derivative(activations[-1], y) 
+        if self.cost_type == "quadratic":
             delta *= self.sigmoid_prime(zs[-1])
             
         #implementing backpropagation equation to calculate error 
@@ -123,7 +134,7 @@ class Network(object):
 
     def cross_entropy_cost_deriviative(self, output_activations, y):
         return
-    def quad_cost_derivative(self, output_activations, y):
+    def cost_derivative(self, output_activations, y):
         #this calculation for the partial derivative of quadratic (MSE) cost function with respect to an activation
         #This is so simple due to some chain rule terms cancelling
         return output_activations-y
